@@ -10,5 +10,5 @@ Attribute VB_Exposed = True
 Option Explicit
 
 Private Sub Test1()
-    MsgBox "SheetModule"
+    MsgBox "SheetModule1"
 End Sub
