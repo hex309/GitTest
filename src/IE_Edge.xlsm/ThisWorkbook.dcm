@@ -1,10 +1,20 @@
-Attribute VB_Name = "WebBrowserSample"
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "ThisWorkbook"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
 Option Explicit
-
-'https://www.ka-net.org/blog/?p=13587
-'動的にWebBrowserコントロールを追加してWebページ表示を行うサンプル
-'※[VBA プロジェクト オブジェクト モデルへのアクセスを信頼する]要有効
-Public Sub Sample()
+'※ThisWorkbookに記述
+'※[Microsoft Internet Controls]要参照
+ 
+Private WithEvents WebView As SHDocVw.WebBrowser
+Attribute WebView.VB_VarHelpID = -1
+ 
+Public Sub Sample2()
   Dim frmBrowser As Object
   Const ComponentName = "UserForm1"
   Const ControlName = "WebView"
@@ -41,11 +51,9 @@ Public Sub Sample()
   Set frmBrowser = UserForms.Add(ComponentName)
   frmBrowser.Show
    
-  'WebBrowser操作
-  With frmBrowser.Controls(ControlName)
+  Set WebView = frmBrowser.Controls(ControlName)
+  With WebView
     '気休め程度にヘッダーにUser-Agent追加
-    'https://www.yahoo.co.jp/
-    'https://www.google.com/?hl=ja
     .Navigate2 _
       URL:="https://www.google.com/?hl=ja", _
       Headers:="User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36 Edg/90.0.818.66"
@@ -56,4 +64,7 @@ Public Sub Sample()
     .Document.getElementsByName("btnK")(0).Click
   End With
 End Sub
-
+ 
+Private Sub WebView_DocumentComplete(ByVal pDisp As Object, URL As Variant)
+  Debug.Print "DocumentComplete:" & URL
+End Sub
