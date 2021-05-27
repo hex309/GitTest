@@ -3,7 +3,7 @@ Option Explicit
 
 Public Sub Sample()
     frmBrowser.Show
-   
+    
     'WebBrowser操作
     With frmBrowser.Controls("WebBrowser")
         '気休め程度にヘッダーにUser-Agent追加
@@ -18,6 +18,7 @@ Public Sub Sample()
         .Document.getElementsByName("q")(0).Value = "初心者備忘録"
         .Document.getElementsByName("btnK")(0).Click
     End With
+    frmBrowser.Repaint
 End Sub
 
 
