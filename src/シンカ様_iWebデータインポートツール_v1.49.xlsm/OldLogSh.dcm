@@ -1,0 +1,62 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "OldLogSh"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Option Explicit
+
+Private Const MSG_RNG = "C1"
+
+'「過去ログ」シートの表の項目を対象に、フィルターを解除
+Public Function setAutoFilter()
+    With Me.Cells(2, 1)
+        .Resize(1, .End(xlToRight).Column).autoFilter
+    End With
+End Function
+
+Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean)
+    If Me.ProtectContents Then
+        On Error Resume Next
+        Me.Unprotect
+        On Error GoTo 0
+    End If
+End Sub
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+    Me.protectSheet
+End Sub
+
+Public Function protectSheet() As Boolean
+    Dim sh As Shape
+    
+    If Not Me.ProtectContents Then
+        Me.Protect PassSh.Range(LOCK_PSWD_RNG).Value, DrawingObjects:=True, userinterfaceonly:=True, AllowFiltering:=True
+
+        With Me.Range(MSG_RNG)
+            .Value = vbNullString
+            .Font.Color = vbBlack
+        End With
+
+        For Each sh In Me.Shapes
+            If sh.name = "ProtectBtn" Then
+                 sh.TextEffect.Text = "3分保護解除"
+            End If
+        Next
+'
+    End If
+End Function
+
+Private Sub unprotecSheet()
+    Static endTime As Date
+    
+    If Me.ProtectContents Then
+        endTime = Now() + TimeSerial(0, 3, 0)
+        unprotectFewMinutes Me.name, endTime, MSG_RNG
+    Else
+        ReProtect Me.name, endTime
+    End If
+End Sub

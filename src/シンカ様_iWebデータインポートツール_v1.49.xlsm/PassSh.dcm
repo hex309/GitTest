@@ -1,0 +1,46 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "PassSh"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Option Explicit
+
+Public Function checkPassOK(ByVal Pass As String) As Boolean
+    If Pass = Me.Range(LOCK_PSWD_RNG).Value Then checkPassOK = True
+End Function
+
+'「メイン」シートの「パスワード変更」ボタンを押下後、
+'現在のPasswordおよび完全一致する新Paswordが2回連続で入力された場合に実行
+Public Function setPass(ByVal newPass As String) As Boolean
+    Dim oldPass As String
+    
+    oldPass = Me.Range(LOCK_PSWD_RNG).Value 'Passwordの値を選択
+    Me.Range(LOCK_PSWD_RNG).Value = newPass
+    
+    updateLock oldPass  '現在のPasswordを引数にして、直下のFunctionプロシージャに値渡し
+    
+    setPass = True
+End Function
+
+
+'5つの対象シートの「シートの保護」を引数の値で解除して、「シートの保護を設定」
+'①「メイン」、②「アカウント」、③「過去ログ」、④「メールアカウント」、⑤「対象セミナーリスト」シート
+Public Sub updateLock(Optional ByVal Pass As String)
+    Dim sh As Variant
+
+    If Pass = vbNullString Then  '引数(Pass)がない場合
+        Pass = Me.Range(LOCK_PSWD_RNG).Value  '等シートの項目名「PassWord」データを代入
+    End If
+    
+    '5つの対象シートの「シートの保護」を引数の値で解除して、「シートの保護を設定」
+    '①「メイン」、②「アカウント」、③「過去ログ」、④「メールアカウント」、⑤「対象セミナーリスト」シート
+    For Each sh In Array(ScenarioSh, AccountSh, OldLogSh, MailSettingSh, SeminarSh)
+        sh.Unprotect Pass
+        sh.protectSheet
+    Next
+
+End Sub

@@ -1,0 +1,96 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "Sheet33"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Option Explicit
+
+Public Sub Run_Exp_CSV_Click()
+'★CSVファイル作成クリック
+    Call Exp_CSV
+
+End Sub
+
+Public Sub Run_Backup_CSV_Click()
+'★バックアップファイル作成クリック
+    Call Run_Exp_Backup
+    Range("G10").Select
+
+End Sub
+
+Public Sub Reg_Fav_Click()
+'★お気に入り登録ボタンクリック
+    Load UF_5
+    UF_5.StartUpPosition = 3
+    UF_5.Show
+
+End Sub
+
+Public Sub Cal_Fav_Click()
+'★お気に入り呼び出しボタンクリック
+    Call Re_Costum_ALLclear
+    Call Re_CostumSt("管理表編集登録")
+    Load UF_6
+    UF_6.StartUpPosition = 3
+    UF_6.Show
+
+End Sub
+
+Public Sub IDReg_Click()
+'★ID設定ボタンクリック
+    If Range("D10") <> "" Then
+        MsgBox "設定のために一旦レコードデータを全てクリアします", vbInformation, "データクリア"
+        Call Re_CostumSt("管理表編集登録")
+    End If
+    Load UF_4
+    UF_4.StartUpPosition = 3
+    UF_4.Show
+
+End Sub
+
+Public Sub Shp_vis1()
+'★ついて表示
+     Shapes("Gr_1").Visible = True
+     Shapes("Fil_1").Visible = True
+    Call Re_Scrl
+    Range("B10").Select
+    
+End Sub
+
+Public Sub Shp_Unvis1()
+'★について非表示
+    Shapes("Gr_1").Visible = False
+    Shapes("Fil_1").Visible = False
+    Call Re_Scrl
+  Range("B10").Select
+    
+End Sub
+
+Public Sub Shp_vis2()
+'★ついて表示
+     Shapes("Gr_2").Visible = True
+     Shapes("Fil_1").Visible = True
+    Call Re_Scrl
+    Range("B10").Select
+    
+End Sub
+
+Public Sub Shp_Unvis2()
+'★について非表示
+    Shapes("Gr_2").Visible = False
+    Shapes("Fil_1").Visible = False
+    Call Re_Scrl
+    Range("B10").Select
+    
+End Sub
+Public Sub Re_HOME()
+'★ホームに戻るボタンクリック
+    Call Run_Clear_SearchKey4
+    Call Re_CostumSt("管理表編集登録")
+    Call vis_UISt
+
+End Sub

@@ -1,0 +1,182 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "ScenarioSh"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Option Explicit
+
+'##### 20200603 AIM：Yamamoto #####
+'メッセージ追加に伴い表示位置変更
+Private Const MSG_RNG As String = "M15"
+'Private Const MSG_RNG As String = "M14"
+Private Const MYNV_OMT_RNG As String = "N4"
+Private Const RKNV_OMT_RNG As String = "N5"
+Private Const PS_OMT_RNG As String = "N7"
+Private Const SM_OMT_RNG As String = "N8"
+Private Const VRD_RNG As String = "N2"
+Private Const USR_NM_RNG As String = "N2"
+Private Const SET_COL_RNG As String = "C:H"
+
+'「メイン」シートの「実行者氏名」データ取得
+Public Function getUserName() As String
+    getUserName = Me.Range(USR_NM_RNG).Value
+End Function
+
+'以下Omit系が「not」なのは、元々「無効」フラグであったものを、顧客要望で「有効」フラグにかえたため
+Public Function getMyNaviOmit() As Boolean
+    getMyNaviOmit = Not Me.Range(MYNV_OMT_RNG).Value
+End Function
+
+Public Function getRikuNaviOmit() As Boolean
+    getRikuNaviOmit = Not Me.Range(RKNV_OMT_RNG).Value
+End Function
+
+Public Function getPsOmit() As Boolean
+    getPsOmit = Not Me.Range(PS_OMT_RNG).Value
+End Function
+
+Public Function getSmOmit() As Boolean
+    getSmOmit = Not Me.Range(SM_OMT_RNG).Value
+End Function
+
+Private Sub hideSetting()
+    Columns(SET_COL_RNG).Hidden = Not Columns(SET_COL_RNG).Hidden
+End Sub
+
+Public Sub validOpName()
+    Dim prtFlg As Boolean
+    Dim nameList As String
+    
+    nameList = MailSettingSh.getNameList
+    
+    If nameList = vbNullString Then nameList = NO_USER_MSG
+    
+    Me.Range(USR_NM_RNG).Value = vbNullString
+
+    prtFlg = Me.ProtectContents
+    If prtFlg Then Me.Unprotect PassSh.Range(LOCK_PSWD_RNG).Value
+
+    '「実行者氏名」の入力規則を、シート名「メールアカウント」の項目名「氏名」をリスト入力規則に設定し直す
+    With Range(VRD_RNG).Validation
+        .Delete
+        .Add Type:=xlValidateList, _
+             AlertStyle:=xlValidAlertStop, _
+             Operator:=xlEqual, _
+             Formula1:=nameList
+        .ErrorTitle = "実行者をリストから選択して下さい。"
+        .ErrorMessage = "実行者はリストから選択するか、リストにあるメンバーを入力してください。" & vbCrLf _
+                        & "自分の名前がリストにない場合は管理者にメンバー追加を依頼してください。"
+    End With
+    
+    If prtFlg Then Me.protectSheet
+    
+End Sub
+
+Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean)
+    If Target.Column < 15 And Me.ProtectContents Then
+        On Error Resume Next
+        Me.Unprotect
+        On Error GoTo 0
+        If (Target.Column = 7 Or Target.Column = 8 _
+            Or Target.address(False, False) = MYNV_OMT_RNG _
+            Or Target.address(False, False) = RKNV_OMT_RNG _
+            Or Target.address(False, False) = PS_OMT_RNG _
+            Or Target.address(False, False) = SM_OMT_RNG) _
+            And Not Me.ProtectContents Then
+            
+            Cancel = True
+            If Not Target.Value = vbNullString Then
+                On Error Resume Next
+                Target.Value = Not Target.Value
+                On Error GoTo 0
+            Else
+                Target.Value = True
+            End If
+        End If
+    End If
+End Sub
+
+'「メイン」シートに保護を掛ける
+Private Sub Worksheet_Change(ByVal Target As Range)
+    'Functionを使用（直下にあり）
+    Me.protectSheet
+End Sub
+
+'シート保護を掛け、右横にメッセージ「* 解除中はデータインポートは実行できません。」を表示
+Public Function protectSheet() As Boolean
+    Dim sh As Shape
+
+    If Not Me.ProtectContents Then
+        Me.Columns(11).Locked = False
+        Me.Range(VRD_RNG).Locked = False
+        
+        Me.Protect PassSh.Range(LOCK_PSWD_RNG).Value, DrawingObjects:=True, userinterfaceonly:=True
+        With Me.Range(MSG_RNG)
+            .Value = "* 解除中はデータインポートは実行できません。"
+            .Font.Color = vbBlack
+        End With
+        
+        For Each sh In Me.Shapes
+            If sh.name = "ProtectBtn" Then
+                 sh.TextEffect.Text = "3分間保護解除"
+            End If
+        Next
+    End If
+End Function
+
+'「メイン」シートの「3分間保護解除」または「保護再開」ボタンを押下した場合に、シートの保護解除処理が実行
+'「3分間保護解除」から実行される処理は、実行開始時間から3分間後にApplication.OnTimeでシートの保護を掛けて元に戻す
+Private Sub unprotecSheet()
+    Static endTime As Date
+    
+    If Me.ProtectContents Then 'シート保護が掛けられている場合
+        endTime = Now() + TimeSerial(0, 3, 0) '現在時間＋3分間
+        'モジュール「Security」のFunctionプロシージャを実行
+        unprotectFewMinutes Me.name, endTime, MSG_RNG  'ボタン名を「3分間保護解除」から「保護再開」へ変更
+    Else  '掛けられていない場合
+        'モジュール「Security」のFunctionプロシージャを実行
+        ReProtect Me.name, endTime  'ボタン名を「保護再開」から「3分間保護解除」に戻す
+    End If
+End Sub
+
+'「メイン」シートの「パスワード変更」ボタンを押下した場合に、発生する処理
+'現在のPasswordを正確に入力後、新しく設定するPasswordを連続2回入力出来たら変更
+'5つの対象シート全てのボタンに対して処理を実行
+'①「メイン」、②「アカウント」、③「過去ログ」、④「メールアカウント」、⑤「対象セミナーリスト」シート
+Public Sub changePassword()
+    Dim ret As String
+    
+    ret = Application.InputBox("『 現在のパスワード 』を入力してください。", "パスワード変更", , , , , 2)
+    
+    If ret = "False" Then
+        Exit Sub
+    End If
+    
+    If Not PassSh.checkPassOK(ret) Then
+        MsgBox "パスワードが違います！", vbExclamation
+        Exit Sub
+    End If
+    
+    ret = Application.InputBox("『 新しいパスワード 』を入力してください。", "パスワード変更", , , , , 2)
+    
+    If ret = "False" Then
+        Exit Sub
+    End If
+    
+    If Not ret = Application.InputBox("もう一度『 新しいパスワード 』を入力してください。", "パスワード変更", , , , , 2) Then
+        MsgBox "パスワードが一致しません！", vbExclamation
+        Exit Sub
+    End If
+    
+    Application.ScreenUpdating = False
+    '5つの対象シート全てのボタンに対して処理を実行
+    '①「メイン」、②「アカウント」、③「過去ログ」、④「メールアカウント」、⑤「対象セミナーリスト」シート
+    If PassSh.setPass(ret) Then MsgBox "パスワードを変更しました！", vbInformation  '
+    Me.Activate
+    Application.ScreenUpdating = True
+    
+End Sub

@@ -1,0 +1,271 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "MailSettingSh"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Option Explicit
+
+Private Const CAP_SUB_RNG As String = "P4"
+Private Const FIN_SUB_RNG As String = "P9"
+Private Const SEM_SUB_RNG As String = "P14"
+Private Const SET_COL_RNG As String = "C:M"
+Private Const MSG_RNG = "O19"
+
+Private Sub hideSetting()
+    Columns(SET_COL_RNG).Hidden = Not Columns(SET_COL_RNG).Hidden
+End Sub
+
+Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean)
+    If Me.ProtectContents Then
+        On Error Resume Next
+        Me.Unprotect
+        On Error GoTo 0
+        If (Target.Column >= Columns(SET_COL_RNG).Column And _
+            Target.Column <= Columns(SET_COL_RNG).Column + Columns(SET_COL_RNG).Count - 1) And _
+            Not Me.ProtectContents Then
+            
+            Cancel = True
+            If Not Target.Value = vbNullString Then
+                On Error Resume Next
+                Target.Value = Not Target.Value
+                On Error GoTo 0
+            Else
+                Target.Value = True
+            End If
+        End If
+    End If
+End Sub
+
+Public Function protectSheet() As Boolean
+    Dim sh As Shape
+    
+    If Not Me.ProtectContents Then
+        Me.Protect PassSh.Range(LOCK_PSWD_RNG).Value, DrawingObjects:=True, userinterfaceonly:=True, AllowFiltering:=True
+
+        With Me.Range(MSG_RNG)
+            .Value = "※ロック解除中はテストメールを送信できません。"
+            .Font.Color = vbBlack
+        End With
+
+        For Each sh In Me.Shapes
+            If sh.name = "ProtectBtn" Then
+                If sh.TextEffect.Text <> "3分保護解除" Then
+                    checkInput Me.Cells(3, 1).Resize(Me.Cells(Rows.Count, 1).End(xlUp).row - 1, 1), False
+                    ScenarioSh.validOpName
+                    sh.TextEffect.Text = "3分保護解除"
+                End If
+            End If
+        Next
+    End If
+End Function
+
+Private Sub unprotecSheet()
+    Static endTime As Date
+    
+    If Me.ProtectContents Then
+        endTime = Now() + TimeSerial(0, 3, 0)
+        unprotectFewMinutes Me.name, endTime, MSG_RNG
+    Else
+        ReProtect Me.name, endTime
+    End If
+End Sub
+
+Private Sub testCaptMail()
+    Set opeLog = New Collection
+    
+    If Not preCheck Then Exit Sub
+    
+    If Not Me.ProtectContents Then
+        MsgBox "ロック解除中はテストメールを送信できません", vbExclamation
+        Exit Sub
+    End If
+
+    If sendCaptAlert("本メールはテストです。") Then
+        MsgBox "成功！"
+    Else
+        MsgBox "送信失敗！"
+    End If
+    
+    Set opeLog = Nothing
+End Sub
+
+Private Sub testSemMail()
+    Set opeLog = New Collection
+    
+    If Not preCheck Then Exit Sub
+    
+    If Not Me.ProtectContents Then
+        MsgBox "ロック解除中はテストメールを送信できません", vbExclamation
+        Exit Sub
+    End If
+
+    If sendSemAlert("本メールはテストです。") Then
+        MsgBox "成功！"
+    Else
+        MsgBox "送信失敗！"
+    End If
+    
+    Set opeLog = Nothing
+End Sub
+
+Private Sub testFinMail()
+    Dim ret As Long
+       
+    Set opeLog = New Collection
+    
+    If Not preCheck Then Exit Sub
+    
+    If MsgBox("本シートに登録されているすべてのアカウントに送信されます。" _
+                & vbCrLf & "よろしいですか？", vbYesNo + vbInformation) <> vbYes Then
+        Exit Sub
+    End If
+    
+    If sendFinAlert("本メールはテストです。") Then
+        MsgBox "成功！"
+    Else
+        MsgBox "送信失敗！"
+    End If
+    
+    Set opeLog = Nothing
+End Sub
+
+Private Sub manualFinMail()
+    Dim ret As Long
+    Dim corpName As String
+    Dim msg As String
+    
+    Set opeLog = New Collection
+    
+    If Not preCheck Then Exit Sub
+    
+    corpName = InputBox("対象企業名を入力してください。")
+    
+    If corpName = vbNullString Then Exit Sub
+    
+    If MsgBox("本シートに登録されているすべてのアカウントに送信されます。" _
+                & vbCrLf & "よろしいですか？", vbYesNo + vbInformation) <> vbYes Then
+        Exit Sub
+    End If
+    
+    msg = corpName & "のi-Webインポートが完了しました！" & vbCrLf & _
+          vbCrLf & _
+          "本日は手動でインポート実施し完了いたしました。" & vbCrLf & _
+          "取り込み件数等はi-Webから確認をお願いいたします。"
+    
+    If sendFinAlert(msg, corpName) Then
+        MsgBox "成功！"
+    Else
+        MsgBox "送信失敗！"
+    End If
+    
+    Set opeLog = Nothing
+End Sub
+
+
+Public Function getSemSubject() As String
+    getSemSubject = Me.Range(SEM_SUB_RNG)
+End Function
+
+Public Function getCaptSubject() As String
+    getCaptSubject = Me.Range(CAP_SUB_RNG)
+End Function
+
+Public Function getFinSubject() As String
+    getFinSubject = Me.Range(FIN_SUB_RNG)
+End Function
+
+Public Function getNameList() As String
+    Dim nameRng As Variant
+    Dim name As String
+    
+    For Each nameRng In Me.Cells(3, 1).Resize(Me.Cells(Rows.Count, 1).End(xlUp).row - 1, 1)
+        name = nameRng.Value
+        If name <> vbNullString Then
+            If nameRng.offset(0, 1).Value <> vbNullString Then
+                name = Replace(name, ",", "_")
+                getNameList = IIf(getNameList = vbNullString, vbNullString, getNameList & ",") & name
+            End If
+        End If
+    Next
+End Function
+
+Public Function getSendAccount(Optional ByVal tgtName As String = vbNullString, Optional ByVal tgtCorp As String = vbNullString) As String
+    Dim tgtRowIdx As Long
+    Dim nameRng As Variant
+    Dim tgtAddress As String
+    Dim corpOffset As Long
+
+    If tgtName <> vbNullString Then
+        On Error Resume Next
+        tgtRowIdx = WorksheetFunction.match(tgtName, Me.Columns(1), 0)
+        On Error GoTo 0
+        
+        If tgtRowIdx = 0 Then
+            opeLog.Add Me.name & "シートに『" & tgtName & "』という名前は登録されていません。"
+        ElseIf tgtRowIdx > 1 Then
+            getSendAccount = Trim(Me.Cells(tgtRowIdx, 2))
+        End If
+    Else
+        If Not tgtCorp = vbNullString Then
+            On Error Resume Next
+            corpOffset = Application.WorksheetFunction.match(tgtCorp, Me.Rows(2), 0)
+            On Error GoTo 0
+        End If
+    
+        For Each nameRng In Me.Cells(3, 1).Resize(Me.Cells(Rows.Count, 1).End(xlUp).row - 1, 1)
+            If nameRng.Value <> vbNullString Then
+                If corpOffset = 0 Then
+                    tgtAddress = Trim(nameRng.offset(0, 1).Value)
+                Else
+                    If nameRng.offset(0, corpOffset - 1) Then
+                        tgtAddress = Trim(nameRng.offset(0, 1).Value)
+                    Else
+                        tgtAddress = vbNullString
+                    End If
+                End If
+            
+                If tgtAddress <> vbNullString Then
+                    getSendAccount = IIf(getSendAccount = vbNullString, vbNullString, getSendAccount & "; ") & tgtAddress
+                End If
+            End If
+        Next
+    End If
+
+End Function
+
+Private Function checkInput(ByVal tgtRng As Range, Optional ByVal delDouble As Boolean = True) As Boolean
+    Dim tgtCell As Variant
+        
+    For Each tgtCell In tgtRng
+        If tgtCell.Column = 1 Then
+
+            If tgtCell.Value <> vbNullString Then
+                On Error Resume Next
+                If WorksheetFunction.CountIf(Me.Columns(1), tgtCell.Value) > 1 Then
+                    MsgBox "同じ名前『 " & tgtCell.Value & " 』は登録できません！" & IIf(delDouble, "", "いずれかを削除してください。"), vbExclamation
+                    If delDouble Then tgtCell.Value = vbNullString
+                End If
+                On Error GoTo 0
+            End If
+            
+            checkInput = True
+            
+        ElseIf tgtCell.Column = 2 Then
+            checkInput = True
+        End If
+    Next
+
+End Function
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+    
+    If checkInput(Target) Then
+        ScenarioSh.validOpName
+    End If
+    
+    Me.protectSheet
+End Sub

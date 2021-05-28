@@ -1,0 +1,67 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "Sheet30"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Option Explicit
+
+Public Sub Reg_Get_NewID_Click()
+'★新規ID取得ボタンクリック
+    Me.Unprotect
+    Range("D6").Select
+    Range("D6") = "新規ID取得中・・・"
+    Range("D6") = Get_Maxval
+    Call St_Lock
+
+End Sub
+
+Public Sub Reg_NewRc_Click()
+'★新規データ追加登録ボタンクリック
+    Dim Ans As Long
+    Dim str_ID As String
+    
+    If Range("D6") = "" Then
+        MsgBox "IDがありません", 16
+        End
+    End If
+    str_ID = Range("D6").Value
+    Call upd_NewID
+    
+    Ans = MsgBox("新規データの追加登録が完了しました！" & vbCrLf & vbCrLf & _
+                            "続けて外部データの紐付を行いますか?" & vbCrLf & _
+                            "はい　でID紐付フォームが開きます" & vbCrLf & vbCrLf & _
+                            "後で紐付する場合は" & vbCrLf & _
+                            "いいえ でホームに戻ります", _
+                            vbYesNo + vbInformation, "外部IDの紐付に進みますか？")
+    If Ans = vbYes Then
+        Load UF_2
+        UF_2.StartUpPosition = 3
+        UF_2.Show
+        Me.Unprotect
+        Range("D6") = ""
+        Call St_Lock
+    ElseIf Ans = vbNo Then
+        Call vis_UISt
+    End If
+    
+End Sub
+
+Public Sub Reg_GAIB_Click()
+'★外部データ紐付ボタンクリック
+    Load UF_2
+    UF_2.StartUpPosition = 3
+    UF_2.Show
+ 
+End Sub
+
+Public Sub Reg_Del_Click()
+'★データ削除ボタンクリック
+    Load UF_3
+    UF_3.StartUpPosition = 3
+    UF_3.Show
+ 
+End Sub

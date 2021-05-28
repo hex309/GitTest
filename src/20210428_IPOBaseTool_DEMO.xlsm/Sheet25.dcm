@@ -1,0 +1,24 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "Sheet25"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Option Explicit
+
+Public Sub Svis_25_1()
+'★ヘルプ表示
+    Shapes("Gr_1").Visible = True
+    Shapes("Fil_1").Visible = True
+
+End Sub
+
+Public Sub Sunvis_25_1()
+'★ヘルプ非表示
+    Shapes("Gr_1").Visible = False
+    Shapes("Fil_1").Visible = False
+    
+End Sub

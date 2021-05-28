@@ -1,0 +1,80 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "SeminarSh"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Option Explicit
+
+Private Const MSG_RNG = "D1"
+Private Const IWEB_JOB_IDX = 2
+Private Const IWEB_STP_IDX = 3
+Private Const IWEB_CLM_IDX = 4
+
+Private Sub trimSpace()
+    trimRange getCurrentRegion(Me.Cells(2, 1), 1, False)
+End Sub
+
+Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean)
+    If Me.ProtectContents Then
+        On Error Resume Next
+        Me.Unprotect
+        On Error GoTo 0
+    End If
+End Sub
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+    Me.protectSheet
+End Sub
+
+Public Function protectSheet() As Boolean
+    Dim sh As Shape
+    
+    If Not Me.ProtectContents Then
+        Me.Protect PassSh.Range(LOCK_PSWD_RNG).Value, DrawingObjects:=True, userinterfaceonly:=True, AllowFiltering:=True
+
+        With Me.Range(MSG_RNG)
+            .Value = vbNullString
+            .Font.Color = vbBlack
+        End With
+
+        For Each sh In Me.Shapes
+            If sh.name = "ProtectBtn" Then
+                 sh.TextEffect.Text = "3分保護解除"
+            End If
+        Next
+    End If
+End Function
+
+Private Sub unprotecSheet()
+    Static endTime As Date
+    
+    If Me.ProtectContents Then
+        endTime = Now() + TimeSerial(0, 3, 0)
+        unprotectFewMinutes Me.name, endTime, MSG_RNG
+    Else
+        ReProtect Me.name, endTime
+    End If
+End Sub
+
+Public Function getSminarJobStep(ByVal seminarID As String) As String
+    'セミナーは職種とステップ名の組み合わせでユニークなイベント名となる。
+    'セミナーIDは、ユニークなイベント名の中で一つのみ選択可能。（他を選択すると他はキャンセルとなる）
+    
+    Dim tbl As Variant
+    Dim i As Long
+    
+    tbl = getCurrentRegion(Me.Cells(1, 2), 1).Value
+    
+    For i = LBound(tbl, 1) To UBound(tbl, 1)
+        If Trim(tbl(i, IWEB_CLM_IDX)) = Trim(seminarID) Then
+            getSminarJobStep = Trim(tbl(i, IWEB_JOB_IDX)) & "/" & Trim(tbl(i, IWEB_STP_IDX))
+            Exit For
+        End If
+    Next
+End Function
+
+

@@ -1,0 +1,120 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "AccountSh"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Option Explicit
+
+#Const cnsTest = 0   '#本番
+'#Const cnsTest = 1      '#テスト
+'本番/テストを切り替える場合は、メインシートの定数も書き換えること！
+
+Private Const MSG_RNG As String = "C1"
+
+Private Sub selectionLogin()
+    Dim tgtSite As CorpSite
+    Dim tgtCorp As String
+    Dim errLog As String
+    Dim i As Long
+    
+    Set opeLog = New Collection
+    Set tgtSite = New CorpSite
+    
+    cancelFlg = False
+    
+    If tgtSite.objIE Is Nothing Then
+        MsgBox "クローズ中のInternetExploreがあります。" & vbCrLf & "数秒待って再度お試しください。"
+        Exit Sub
+    End If
+    
+    tgtCorp = Me.Cells(Selection.row, 1)
+    
+    If tgtCorp = vbNullString Then
+        MsgBox "対象企業名が確認できませんでした。"
+        Exit Sub
+    End If
+    
+    Select Case Me.Cells(Selection.row, 2)
+        Case "i-Web"
+            If Not tgtSite.setCorp(tgtCorp, "i-Web", True) Then GoTo err
+            If loginiWeb(tgtSite) Then
+                tgtSite.objIE.visible = True
+            Else
+                GoTo err
+            End If
+        Case "マイナビ"
+            '2018/07 以降テストでのマイナビログインは禁止！必要であればお客様の許可を得る事！
+            #If cnsTest = 1 Then
+                MsgBox "テスト版ではログインできません。", vbExclamation
+                Exit Sub
+            #Else
+                If Not tgtSite.setCorp(tgtCorp, "マイナビ", True) Then GoTo err
+                If Not loginMyNavi(tgtSite) Then GoTo err
+            #End If
+            
+        Case "リクナビ"
+            If Not tgtSite.setCorp(tgtCorp, "リクナビ", True) Then GoTo err
+            If Not loginRikuNavi(tgtSite, False) Then GoTo err
+            
+        Case Else
+            Exit Sub
+    End Select
+Exit Sub
+err:
+    For i = 1 To opeLog.Count
+        errLog = errLog & IIf(i > 1, vbCrLf, vbNullString) & opeLog(i)
+    Next
+
+    MsgBox errLog, vbExclamation
+
+End Sub
+
+Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean)
+    If Me.ProtectContents Then
+        On Error Resume Next
+        Me.Unprotect
+        On Error GoTo 0
+    End If
+End Sub
+
+Private Sub Worksheet_Change(ByVal Target As Range)
+    Me.protectSheet
+End Sub
+
+'アカウント
+Public Function protectSheet() As Boolean
+    Dim sh As Shape
+    
+    If Not Me.ProtectContents Then
+        Me.Protect PassSh.Range(LOCK_PSWD_RNG).Value, DrawingObjects:=True, userinterfaceonly:=True
+        
+        With Me.Range(MSG_RNG)
+            .Value = vbNullString
+            .Font.Color = vbBlack
+        End With
+        
+        For Each sh In Me.Shapes
+            If sh.name = "ProtectBtn" Then
+                 sh.TextEffect.Text = "3分保護解除"
+            End If
+        Next
+        
+    End If
+End Function
+
+Private Sub unprotecSheet()
+    Static endTime As Date
+    
+    If Me.ProtectContents Then
+        endTime = Now() + TimeSerial(0, 3, 0)
+        unprotectFewMinutes Me.name, endTime, MSG_RNG
+    Else
+        ReProtect Me.name, endTime
+    End If
+End Sub
+
+

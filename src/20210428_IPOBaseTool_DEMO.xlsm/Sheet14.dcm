@@ -1,0 +1,63 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "Sheet14"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Option Explicit
+
+Public Sub San_Click()
+'★インポート参照ボタンクリック
+    With Me
+        .Unprotect
+        .Range("C7").Select
+        .Range("C7").Value = Get_FilFol(1, "インポートファイルを選択してください (*.xlsb, *.xlsb")
+    End With
+    Call St_Lock
+     
+End Sub
+
+Sub Import_Click()
+'★インポートボタンクリック
+    Application.ScreenUpdating = True '処理表示有効
+    With Me
+        If .Range("C7").Value = "" Then
+            MsgBox "ファイルパスが設定されていません", 16
+            End
+        End If
+        Call Shp_vis_Imp '処理中メッセージ表示
+        Call Imp_StD '外部ファイルからデータ取得
+        Call TMP_StD("一括取込", "TMP_R1", "A2:GR5000", "A3") '外部一時シート1へ転記
+        Call TMP_StD("一括取込", "TMP_R2", "A2:B5000", "A3") '外部一時シートへ2キー転記
+        Call TMP_StD("一括取込", "TMP_R2", "GS2:OJ5000", "C3") '外部一時シートへ2キー以降転記
+        Call ins_Ex_Ac 'Excel⇒Accessインサート
+        Call upd_KANRI_RegFlgRe 'Access_T_KANRIの更新有無フラグリセット
+        Call Get_GAIBColList '外部データフォーマットからフィールド名リスト作成
+        MsgBox "インポート完了", vbInformation '処理完了メッセージ表示
+        Application.ScreenUpdating = True 'UI表示周り処理
+        Call Shp_Unvis_Imp '処理中メッセージ非表示
+    End With
+    Call vis_UISt
+
+End Sub
+
+Public Function Shp_vis_Imp()
+'★処理開始メッセージ表示
+    With Me
+       .Shapes("Fil_1").Visible = True
+       .Shapes("Gr_1").Visible = True
+    End With
+     
+End Function
+
+Public Function Shp_Unvis_Imp()
+'★処理開始メッセージ非表示
+    With Me
+       .Shapes("Fil_1").Visible = False
+       .Shapes("Gr_1").Visible = False
+    End With
+     
+End Function

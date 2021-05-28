@@ -1,0 +1,52 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "Sheet4"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Option Explicit
+
+Private Sub Worksheet_Activate()
+'★シートアクティブ時
+    Call Shp_Unvis_1
+    
+End Sub
+
+Public Sub Shp_vis_1()
+'★ボタンガイド表示
+    Shapes("Fil_1").Visible = True
+    Shapes("Gr_1").Visible = True
+
+End Sub
+
+Public Sub Shp_Unvis_1()
+'★ボタンガイド非表示
+    Shapes("Fil_1").Visible = False
+    Shapes("Gr_1").Visible = False
+
+End Sub
+
+Public Sub Shp_vis_end()
+'★終了メッセージ表示
+    Shapes("Fil_1").Visible = True
+    Shapes("Gr_end").Visible = True
+    
+End Sub
+
+Public Sub Shp_Unvis_end()
+'★終了メッセージ非表示
+    Shapes("Fil_1").Visible = False
+    Shapes("Gr_end").Visible = False
+
+End Sub
+
+Public Sub end_Tool()
+'★セーブして閉じる
+    Call Shp_Unvis_end
+    ThisWorkbook.Save
+    ThisWorkbook.Close
+
+End Sub

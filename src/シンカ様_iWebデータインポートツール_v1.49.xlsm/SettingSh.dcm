@@ -1,0 +1,56 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "SettingSh"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Option Explicit
+
+Private Const DL_FOLDER_RNG As String = "B3"  '個人フォルダ以下を指定
+Private Const DL_CSV_TIMEOUT_RNG As String = "B7"
+Private Const OLD_MYNAV_PATH_RNG As String = "A11:A20"
+Private Const LOG_MAX_LOW_RNG As String = "B24"
+
+Public Property Get DlFolderPath() As String
+    DlFolderPath = Me.Range(DL_FOLDER_RNG).Value
+End Property
+
+Public Property Get DlTimeOut() As Date
+    DlTimeOut = CDate(Me.Range(DL_CSV_TIMEOUT_RNG).Value)
+End Property
+
+Public Property Get OldMyNaviRowIndex(ByVal corpName As String) As Long
+
+    On Error Resume Next
+    OldMyNaviRowIndex = Application.WorksheetFunction.match(corpName, Me.Range(OLD_MYNAV_PATH_RNG), 0)
+    On Error GoTo 0
+    
+    If OldMyNaviRowIndex <> 0 Then OldMyNaviRowIndex = OldMyNaviRowIndex + Range(OLD_MYNAV_PATH_RNG).row - 1
+
+End Property
+
+Public Function getLogMaxLow() As Long
+    getLogMaxLow = Me.Range(LOG_MAX_LOW_RNG).Value
+End Function
+
+Public Function ensureOldPath(ByVal corpName As String) As Boolean
+    Dim baseRange As Range
+
+    On Error Resume Next
+    Set baseRange = Range(OLD_MYNAV_PATH_RNG).offset(Application.WorksheetFunction.match(corpName, Me.Range(OLD_MYNAV_PATH_RNG), 0) - 1, 0).Resize(1, 1)
+    On Error GoTo 0
+    
+    If Not baseRange Is Nothing Then
+
+        If Not baseRange.offset(0, 2).Value = vbNullString Then
+            baseRange.offset(0, 1).Value = baseRange.offset(0, 2).Value
+            baseRange.offset(0, 2).Value = vbNullString
+            
+            ensureOldPath = True
+        End If
+    End If
+
+End Function

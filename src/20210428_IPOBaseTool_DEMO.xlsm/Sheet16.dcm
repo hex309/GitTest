@@ -1,0 +1,71 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "Sheet16"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Option Explicit
+Public Sub San_Click()
+'★インポート参照ボタンクリック
+    Dim str_Fp As String
+'　C7セルに取得ファイルパス
+        With Me
+            .Unprotect
+            .Range("C7").Select
+            .Range("C7").Value = Get_FilFol(1, "インポートファイルを選択してください (*.csv, *.csv")
+            str_Fp = .Range("C7").Value
+            If str_Fp <> "" Then
+                If InStr(str_Fp, "_BackUp") <= 0 Then
+                    MsgBox "選択されたアイテムはバックアップファイルではありません" & vbCrLf & _
+                                "正しいバックアップファイルを選択してください", 16
+                    .Range("C7").Value = ""
+                    Call St_Lock
+                    End
+                End If
+            End If
+        End With
+        Call St_Lock
+     
+End Sub
+
+Sub Import_Click()
+'★バックアップインポートボタンクリック
+    Dim Ans As Long
+    
+    Application.ScreenUpdating = True '処理表示
+    
+    If Me.Range("C7").Value = "" Then
+        MsgBox "ファイルパスが設定されていません", 16
+        End
+    End If
+    Ans = MsgBox("この処理を行うと現在のAccessDBの" & vbCrLf & _
+                "管理表データは全て破棄されます" & vbCrLf & _
+                "必ずバックアップを取ってから行ってください" & vbCrLf & _
+                "バックアップを取っていない場合は" & vbCrLf & _
+                "いいえ  でキャンセルしてください" _
+                , vbYesNo + vbInformation, "万が一の備え")
+    If Ans = vbNo Then End
+
+    With Me
+        
+        .Unprotect
+        .Shapes("Fil_1").Visible = True
+        .Shapes("Gr_1").Visible = True
+        Call Imp_CSV_Exl 'CSVファイルからデータ取得
+        Call ins_Ex_Ac_Kanri_CSV 'Excel⇒Accessインサート
+        Call upd_KANRI_RegFlgRe 'T_KANRIの更新有無フラグリセット
+
+        MsgBox "バックアップインポートが完了しました！", vbInformation 'メッセージ表示
+        Application.ScreenUpdating = True 'UI表示周り処理
+        .Unprotect
+        .Shapes("Fil_1").Visible = False
+        .Shapes("Gr_1").Visible = False
+        .Select
+        Call St_Lock
+    End With
+    Call vis_UISt
+
+End Sub

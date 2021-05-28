@@ -1,0 +1,17 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "LogSh"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Option Explicit
+
+'「実行ログ」シートの表の項目を対象に、フィルターを解除
+Public Function setAutoFilter()
+    With Me.Cells(2, 1)
+        .Resize(1, .End(xlToRight).Column).autoFilter
+    End With
+End Function
